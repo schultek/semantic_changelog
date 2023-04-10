@@ -19,9 +19,10 @@ import 'changelog.dart';
 /// This visit all packages while guaranteeing that all dependencies
 /// of a package are visited first, yes visit packages only once.
 Future<void> visitPackagesInDependencyOrder(
-  FutureOr<void> Function(Package package) visitor,
-) async {
-  final packages = await findPackages();
+  FutureOr<void> Function(Package package) visitor, {
+  PackageFilters? filters,
+}) async {
+  final packages = await findPackages(filters: filters);
 
   final packageQueue = LinkedList<_Entry<Package>>();
   packageQueue.addAll(packages.map(_Entry.new));
@@ -52,7 +53,7 @@ Future<void> visitPackagesInDependencyOrder(
 }
 
 /// Lists all the packages within the current directory.
-Future<List<Package>> findPackages() async {
+Future<List<Package>> findPackages({PackageFilters? filters}) async {
   try {
     final configs =
         await MelosWorkspaceConfig.fromWorkspaceRoot(Directory.current);
@@ -60,7 +61,10 @@ Future<List<Package>> findPackages() async {
       configs,
       logger: MelosLogger(Logger.standard()),
     );
-    return workspace.allPackages.values.toList();
+    return workspace.allPackages.values
+        .where((p) => filters?.ignore.every((g) => !g.matches(p.path)) ?? true)
+        .where((p) => filters?.scope.every((g) => g.matches(p.path)) ?? true)
+        .toList();
   } on MelosException catch (e) {
     stderr.writeln(e.toString());
     return [];

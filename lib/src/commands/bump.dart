@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:args/command_runner.dart';
 import 'package:collection/collection.dart';
+import 'package:glob/glob.dart';
 import 'package:melos/melos.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:pubspec/pubspec.dart';
@@ -18,6 +19,20 @@ class BumpCommand extends Command<void> {
       'dry-run',
       negatable: false,
       help: 'Analyze but do not apply the version bump.',
+    );
+
+    argParser.addMultiOption(
+      'scope',
+      valueHelp: 'glob',
+      help: 'Include only packages with names matching the given glob. This '
+          'option can be repeated.',
+    );
+
+    argParser.addMultiOption(
+      'ignore',
+      valueHelp: 'glob',
+      help: 'Exclude packages with names matching the given glob. This option '
+          'can be repeated.',
     );
   }
 
@@ -50,7 +65,15 @@ class BumpCommand extends Command<void> {
 
   @override
   FutureOr<void>? run() async {
-    final versionBumps = await _computeBumps();
+    final scope = argResults!['scope'] as List<String>? ?? [];
+    final ignore = argResults!['ignore'] as List<String>? ?? [];
+
+    final filters = PackageFilters(
+      scope: scope.map(Glob.new).toList(),
+      ignore: ignore.map(Glob.new).toList(),
+    );
+
+    final versionBumps = await _computeBumps(filters);
     if (!(argResults!['dry-run'] as bool)) {
       await _applyBumps(versionBumps);
     }
@@ -75,10 +98,11 @@ class BumpCommand extends Command<void> {
     );
   }
 
-  Future<Map<String, PackageUpdate>> _computeBumps() async {
+  Future<Map<String, PackageUpdate>> _computeBumps(
+      PackageFilters filters) async {
     final versionBumps = <String, PackageUpdate>{};
 
-    await visitPackagesInDependencyOrder((package) async {
+    await visitPackagesInDependencyOrder(filters: filters, (package) async {
       var update = await PackageUpdate.tryParse(package);
       if (update != null) {
         versionBumps[package.name] = update;
