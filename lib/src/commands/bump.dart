@@ -13,6 +13,14 @@ import '../packages.dart';
 
 /// The "bump" command.
 class BumpCommand extends Command<void> {
+  BumpCommand() {
+    argParser.addFlag(
+      'dry-run',
+      negatable: false,
+      help: 'Analyze but do not apply the version bump.',
+    );
+  }
+
   @override
   String get description => 'Updates the version of the packages with '
       'changes within the project.';
@@ -43,7 +51,9 @@ class BumpCommand extends Command<void> {
   @override
   FutureOr<void>? run() async {
     final versionBumps = await _computeBumps();
-    await _applyBumps(versionBumps);
+    if (!(argResults!['dry-run'] as bool)) {
+      await _applyBumps(versionBumps);
+    }
     _logChanges(versionBumps);
   }
 
