@@ -117,17 +117,22 @@ class BumpCommand extends Command<void> {
 
       if (dependencyChanges.isEmpty) return;
 
-      final lockedDependencyChanges =
-          _findLockedDependencyChanges(package, dependencyChanges);
-
       if (update == null) {
         // If a dependency has a version bump, we need to bump the version of this
         // package as well. But only do so if the pubspec of the package
         // has a version number.
         if (package.pubSpec.version == null) return;
+
+        final dependencyUpdateType =
+            _findDependencyUpdateType(package, dependencyChanges);
+
+        if (dependencyUpdateType == null) {
+          return;
+        }
+
         update = versionBumps[package.name] = PackageUpdate(
           package,
-          lockedDependencyChanges ?? PackageUpdateType.patch,
+          dependencyUpdateType,
         );
 
         if (package.changelog.existsSync()) {
@@ -152,34 +157,39 @@ ${await package.changelog.readAsString()}''',
 }
 
 extension on Package {
-  bool isLockedWithDependency(String dependencyName) {
-    return isLockedWithDependencyReference(
+  bool allowsDependencyVersion(String dependencyName, Version version) {
+    return dependencyReferenceAllowsVersion(
           pubSpec.dependencies[dependencyName],
-        ) ||
-        isLockedWithDependencyReference(
+          version,
+        ) &&
+        dependencyReferenceAllowsVersion(
           pubSpec.devDependencies[dependencyName],
+          version,
         );
   }
 
-  bool isLockedWithDependencyReference(
+  bool dependencyReferenceAllowsVersion(
     DependencyReference? dependencyReference,
+    Version version,
   ) {
-    if (dependencyReference is! HostedReference) return false;
+    if (dependencyReference is! HostedReference) return true;
 
-    return dependencyReference.versionConstraint is Version;
+    return dependencyReference.versionConstraint.allows(version);
   }
 }
 
-PackageUpdateType? _findLockedDependencyChanges(
+PackageUpdateType? _findDependencyUpdateType(
   Package package,
   List<PackageUpdate> dependencyChanges,
 ) {
   PackageUpdateType? result;
-  for (final lockedDependency in dependencyChanges
-      .where((e) => package.isLockedWithDependency(e.package.name))) {
-    if (result != null && result != lockedDependency.type) return null;
 
-    result = lockedDependency.type;
+  for (final dependency in dependencyChanges) {
+    if (!package.allowsDependencyVersion(
+        dependency.package.name, dependency.newVersion)) {
+      result = PackageUpdateType.patch;
+      break;
+    }
   }
 
   return result;
