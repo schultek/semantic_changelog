@@ -91,6 +91,6 @@ class PackageUpdate {
   }();
 
   String get newVersionChangelogHeader {
-    return '## $newVersion - ${DateTime.now().toIso8601String().split('T').first}';
+    return '## $newVersion';
   }
 }

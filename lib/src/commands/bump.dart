@@ -56,7 +56,7 @@ class BumpCommand extends Command<void> {
     );
     for (final update in versionBumps.values) {
       buffer.writeln(
-        '${update.package.name.padRight(longestPackageNameLength)} : ${update.package.version} -> ${update.newVersion}',
+        '${update.package.name.padRight(longestPackageNameLength)} : ${update.package.version} -> ${update.newVersion}${update.changelogPatch == null ? ' (No Changelog)' : ''}',
       );
     }
 
