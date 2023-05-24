@@ -13,6 +13,9 @@ import '../pub.dart';
 
 /// The "bump" command.
 class PublishCommand extends Command<void> {
+  PublishCommand() {
+    argParser.addFlag('force', abbr: 'f');
+  }
   @override
   String get description => 'Git tag and publish packages to pub.dev.';
 
@@ -29,8 +32,10 @@ class PublishCommand extends Command<void> {
 
     _logPackagesToPublish(packagesToPublish);
 
-    // The user aborted the publish
-    if (!promptBool()) return;
+    if (argResults!['force'] != true) {
+      // The user aborted the publish
+      if (!promptBool()) return;
+    }
 
     await _publishPackages(packagesToPublish);
   }
