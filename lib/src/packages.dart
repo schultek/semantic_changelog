@@ -113,8 +113,8 @@ extension PackageMeta on Package {
       workingDirectory: path,
     );
 
-    unawaited(process.stdout.pipe(stdout));
-    unawaited(process.stderr.pipe(stderr));
+    unawaited(process.stdout.forEach(stdout.add));
+    unawaited(process.stderr.forEach(stderr.add));
 
     final code = await process.exitCode;
     if (code != 0) {
