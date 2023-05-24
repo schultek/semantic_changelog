@@ -107,15 +107,18 @@ extension PackageMeta on Package {
   String get gitTagName => '$name-v$version';
 
   Future<void> publish() async {
-    final result = await Process.run(
+    final process = await Process.start(
       'dart',
       ['pub', 'publish', '--force'],
       workingDirectory: path,
-      stderrEncoding: utf8,
     );
 
-    if (result.exitCode != 0) {
-      throw Exception(result.stderr);
+    unawaited(process.stdout.pipe(stdout));
+    unawaited(process.stderr.pipe(stderr));
+
+    final code = await process.exitCode;
+    if (code != 0) {
+      throw Exception(code);
     }
   }
 
