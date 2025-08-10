@@ -110,7 +110,7 @@ class BumpCommand extends Command<void> {
       }
 
       // Check if any of the dependencies has a version bump
-      final dependencyChanges = package.dependenciesInWorkspace.values
+      final dependencyChanges = package.dependenciesInWorkspace.values.followedBy(package.devDependenciesInWorkspace.values)
           .map((dependency) => versionBumps[dependency.name])
           .whereNotNull()
           .toList();
