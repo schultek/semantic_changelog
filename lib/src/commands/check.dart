@@ -92,8 +92,8 @@ Future<List<Project>> _groupChangedFiles(List<String> changedFiles) async {
       if (!changedFiles.any((e) => p.equals(e, package.changelog.path))) {
         stderr.writeln(
           '''
-Changes detected for package `${package.name.red()}` at `${package.relativePath}`, but no ${'CHANGELOG.md'.green()} entry found.
-Please add a ${'CHANGELOG.md'.green()} entry for this package.
+Changes detected for package `${ansi.red(package.name)}` at `${package.relativePath}`, but no ${ansi.green('CHANGELOG.md')} entry found.
+Please add a ${ansi.green('CHANGELOG.md')} entry for this package.
 To do so, start the CHANGELOG.md with `## Unreleased major/minor/patch` and explain the changes introduced.
 
 Changed files (total ${changes.length}):

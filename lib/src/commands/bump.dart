@@ -5,7 +5,7 @@ import 'dart:math';
 import 'package:args/command_runner.dart';
 import 'package:glob/glob.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:pubspec/pubspec.dart';
+import 'package:pubspec_parse/pubspec_parse.dart';
 
 import '../changelog.dart';
 import '../packages.dart';
@@ -46,8 +46,7 @@ class BumpCommand extends Command<void> {
       stdout.writeln('No packages have been updated.');
       return;
     }
-    final longestPackageNameLength =
-        versionBumps.keys.map((e) => e.length).reduce(max);
+    final longestPackageNameLength = versionBumps.keys.map((e) => e.length).reduce(max);
 
     final buffer = StringBuffer(
       'The following packages have been updated:\n',
@@ -97,29 +96,30 @@ class BumpCommand extends Command<void> {
   }
 
   Future<Map<String, PackageUpdate>> _computeBumps(
-      PackageFilters filters) async {
+    PackageFilters filters,
+  ) async {
     final versionBumps = <String, PackageUpdate>{};
 
     final workspace = await Workspace.find();
 
     await workspace.visitPackagesInDependencyOrder(filters: filters, (package) async {
-      var update = await PackageUpdate.tryParse(package);
+      final update = await PackageUpdate.tryParse(package);
       if (update != null) {
         versionBumps[package.name] = update;
         // We continue to compute dependency changes in case, if any
       }
+    });
+
+    await workspace.visitPackagesInDependencyOrder(filters: filters, (package) async {
+      var update = versionBumps[package.name];
 
       // Check if any of the dependencies has a version bump
-      final dependencyChanges = workspace
-          .dependenciesInWorkspace(package)
-          .map((dependency) => versionBumps[dependency])
-          .nonNulls
-          .toList();
+      final dependencyChanges =
+          workspace.dependenciesInWorkspace(package).map((dependency) => versionBumps[dependency]).nonNulls.toList();
 
       if (dependencyChanges.isEmpty) return;
 
-      final lockedDependencyChanges =
-          _findLockedDependencyChanges(package, dependencyChanges);
+      final lockedDependencyChanges = _findLockedDependencyChanges(package, dependencyChanges);
 
       if (update == null) {
         // If a package has no updates but some dependency changes, we need to
@@ -128,8 +128,7 @@ class BumpCommand extends Command<void> {
         if (package.version == null) return;
         update = versionBumps[package.name] = PackageUpdate(
           package,
-          lockedDependencyChanges ??
-              PackageUpdateType.dependencyChange(package.version!),
+          lockedDependencyChanges ?? PackageUpdateType.dependencyChange(package.version!),
         );
 
         if (package.changelog.existsSync()) {
@@ -149,6 +148,7 @@ ${await package.changelog.readAsString()}''',
 
       update.dependencyChanges.addAll(dependencyChanges);
     });
+
     return versionBumps;
   }
 }
@@ -164,11 +164,11 @@ extension on Package {
   }
 
   bool isLockedWithDependencyReference(
-    DependencyReference? dependencyReference,
+    Dependency? dependencyReference,
   ) {
-    if (dependencyReference is! HostedReference) return false;
+    if (dependencyReference is! HostedDependency) return false;
 
-    return dependencyReference.versionConstraint is Version;
+    return dependencyReference.version is Version;
   }
 }
 
@@ -177,8 +177,7 @@ PackageUpdateType? _findLockedDependencyChanges(
   List<PackageUpdate> dependencyChanges,
 ) {
   PackageUpdateType? result;
-  for (final lockedDependency in dependencyChanges
-      .where((e) => package.isLockedWithDependency(e.package.name))) {
+  for (final lockedDependency in dependencyChanges.where((e) => package.isLockedWithDependency(e.package.name))) {
     if (result != null && result != lockedDependency.type) return null;
 
     result = lockedDependency.type;

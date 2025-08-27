@@ -6,10 +6,9 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:glob/glob.dart';
-import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:pubspec/pubspec.dart';
+import 'package:pubspec_parse/pubspec_parse.dart';
 import 'package:yaml/yaml.dart';
 
 import 'changelog.dart';
@@ -23,11 +22,13 @@ class Workspace {
   Workspace(this.packages);
 
   static Future<Workspace> find() async {
-    final packages = await Glob('**/pubspec.yaml', recursive: true).list().asyncMap((file) async {
-      final pubspec = await PubSpec.loadFile(file.path);
+    final rootPubspec = Pubspec.parse(File('pubspec.yaml').readAsStringSync());
+    final packages = rootPubspec.workspace?.map((file) {
+          final pubspec = Pubspec.parse(File(join(file, 'pubspec.yaml')).readAsStringSync());
 
-      return Package(pubspec: pubspec, path: file.parent.path);
-    }).toList();
+          return Package(pubspec: pubspec, path: file);
+        }).toList() ??
+        [];
 
     return Workspace(packages);
   }
@@ -48,11 +49,6 @@ class Workspace {
     final visitedPackages = <Package>{};
 
     void recurs(Package package) {
-      if (filters != null) {
-        if (filters.ignore.any((g) => g.matches(package.path))) return;
-        if (filters.scope.isNotEmpty && !filters.scope.any((g) => g.matches(package.path))) return;
-      }
-
       if (visitedPackages.contains(package)) return;
       visitedPackages.add(package);
 
@@ -65,7 +61,13 @@ class Workspace {
       futures.add(visitor(package));
     }
 
-    packages.forEach(recurs);
+    for (final package in packages) {
+      if (filters != null) {
+        if (filters.ignore.any((g) => g.matches(package.path))) continue;
+        if (filters.scope.isNotEmpty && !filters.scope.any((g) => g.matches(package.path))) continue;
+      }
+      recurs(package);
+    }
 
     await Future.wait(futures);
   }
@@ -96,12 +98,12 @@ class _Edit {
 class Package {
   Package({required this.pubspec, required this.path});
 
-  final PubSpec pubspec;
+  final Pubspec pubspec;
   final String path;
 
-  late final uniqueDependencyNames = pubspec.allDependencies.keys.toSet();
+  late final uniqueDependencyNames = pubspec.dependencies.keys.followedBy(pubspec.devDependencies.keys).toSet();
 
-  String get name => pubspec.name!;
+  String get name => pubspec.name;
   Version? get version => pubspec.version;
   File get pubspecFile => File(join(path, 'pubspec.yaml'));
   File get changelog => File(join(path, 'CHANGELOG.md'));
@@ -192,11 +194,15 @@ class Package {
         // Not a version number. Likely a git/path dependency.
         if (value is! String) return;
 
+        if (containsVersion(value, dependencyChange.newVersion)) {
+          return;
+        }
+
         edits.add(
           _Edit(
             dependency.value.span.start.offset,
             dependency.value.span.end.offset,
-            dependencyChange.newVersion.toString(),
+            isTightConstraints(value) ? dependencyChange.newVersion.toString() : '^${dependencyChange.newVersion}',
           ),
         );
       }
@@ -221,4 +227,17 @@ class Package {
 
     await pubspecFile.writeAsString(newPubspecContent.toString());
   }
+}
+
+bool isTightConstraints(String value) {
+  try {
+    Version.parse(value);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+bool containsVersion(String value, Version version) {
+  return VersionConstraint.parse(value).allows(version);
 }
