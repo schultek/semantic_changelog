@@ -3,9 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:args/command_runner.dart';
-import 'package:collection/collection.dart';
 import 'package:glob/glob.dart';
-import 'package:melos/melos.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:pubspec/pubspec.dart';
 
@@ -68,7 +66,7 @@ class BumpCommand extends Command<void> {
     final scope = argResults!['scope'] as List<String>? ?? [];
     final ignore = argResults!['ignore'] as List<String>? ?? [];
 
-    final filters = PackageFilters(
+    final filters = (
       scope: scope.map(Glob.new).toList(),
       ignore: ignore.map(Glob.new).toList(),
     );
@@ -94,7 +92,7 @@ class BumpCommand extends Command<void> {
               ),
             ],
           )
-          .whereNotNull(),
+          .nonNulls,
     );
   }
 
@@ -102,7 +100,9 @@ class BumpCommand extends Command<void> {
       PackageFilters filters) async {
     final versionBumps = <String, PackageUpdate>{};
 
-    await visitPackagesInDependencyOrder(filters: filters, (package) async {
+    final workspace = await Workspace.find();
+
+    await workspace.visitPackagesInDependencyOrder(filters: filters, (package) async {
       var update = await PackageUpdate.tryParse(package);
       if (update != null) {
         versionBumps[package.name] = update;
@@ -110,29 +110,26 @@ class BumpCommand extends Command<void> {
       }
 
       // Check if any of the dependencies has a version bump
-      final dependencyChanges = package.dependenciesInWorkspace.values.followedBy(package.devDependenciesInWorkspace.values)
-          .map((dependency) => versionBumps[dependency.name])
-          .whereNotNull()
+      final dependencyChanges = workspace
+          .dependenciesInWorkspace(package)
+          .map((dependency) => versionBumps[dependency])
+          .nonNulls
           .toList();
 
       if (dependencyChanges.isEmpty) return;
 
+      final lockedDependencyChanges =
+          _findLockedDependencyChanges(package, dependencyChanges);
+
       if (update == null) {
-        // If a dependency has a version bump, we need to bump the version of this
-        // package as well. But only do so if the pubspec of the package
-        // has a version number.
-        if (package.pubSpec.version == null) return;
-
-        final dependencyUpdateType =
-            _findDependencyUpdateType(package, dependencyChanges);
-
-        if (dependencyUpdateType == null) {
-          return;
-        }
-
+        // If a package has no updates but some dependency changes, we need to
+        // bump the version of this package to match. But only do so if the
+        // pubspec of the package has a version number.
+        if (package.version == null) return;
         update = versionBumps[package.name] = PackageUpdate(
           package,
-          dependencyUpdateType,
+          lockedDependencyChanges ??
+              PackageUpdateType.dependencyChange(package.version!),
         );
 
         if (package.changelog.existsSync()) {
@@ -157,39 +154,34 @@ ${await package.changelog.readAsString()}''',
 }
 
 extension on Package {
-  bool allowsDependencyVersion(String dependencyName, Version version) {
-    return dependencyReferenceAllowsVersion(
-          pubSpec.dependencies[dependencyName],
-          version,
-        ) &&
-        dependencyReferenceAllowsVersion(
-          pubSpec.devDependencies[dependencyName],
-          version,
+  bool isLockedWithDependency(String dependencyName) {
+    return isLockedWithDependencyReference(
+          pubspec.dependencies[dependencyName],
+        ) ||
+        isLockedWithDependencyReference(
+          pubspec.devDependencies[dependencyName],
         );
   }
 
-  bool dependencyReferenceAllowsVersion(
+  bool isLockedWithDependencyReference(
     DependencyReference? dependencyReference,
-    Version version,
   ) {
-    if (dependencyReference is! HostedReference) return true;
+    if (dependencyReference is! HostedReference) return false;
 
-    return dependencyReference.versionConstraint.allows(version);
+    return dependencyReference.versionConstraint is Version;
   }
 }
 
-PackageUpdateType? _findDependencyUpdateType(
+PackageUpdateType? _findLockedDependencyChanges(
   Package package,
   List<PackageUpdate> dependencyChanges,
 ) {
   PackageUpdateType? result;
+  for (final lockedDependency in dependencyChanges
+      .where((e) => package.isLockedWithDependency(e.package.name))) {
+    if (result != null && result != lockedDependency.type) return null;
 
-  for (final dependency in dependencyChanges) {
-    if (!package.allowsDependencyVersion(
-        dependency.package.name, dependency.newVersion)) {
-      result = PackageUpdateType.patch;
-      break;
-    }
+    result = lockedDependency.type;
   }
 
   return result;

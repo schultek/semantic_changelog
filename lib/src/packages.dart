@@ -1,80 +1,74 @@
 // ignore_for_file: public_member_api_docs
 
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cli_util/cli_logging.dart';
 import 'package:collection/collection.dart';
-import 'package:melos/melos.dart';
+import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:pubspec/pubspec.dart';
 import 'package:yaml/yaml.dart';
 
 import 'changelog.dart';
 
-/// Visits the packages in dependency order.
-///
-/// This visit all packages while guaranteeing that all dependencies
-/// of a package are visited first, yes visit packages only once.
-Future<void> visitPackagesInDependencyOrder(
-  FutureOr<void> Function(Package package) visitor, {
-  PackageFilters? filters,
-}) async {
-  final packages = await findPackages(filters: filters);
+typedef PackageFilters = ({
+  List<Glob> scope,
+  List<Glob> ignore,
+});
 
-  final packageQueue = LinkedList<_Entry<Package>>();
-  packageQueue.addAll(packages.map(_Entry.new));
+class Workspace {
+  Workspace(this.packages);
 
-  final visitedPackages = <Package>{};
+  static Future<Workspace> find() async {
+    final packages = await Glob('**/pubspec.yaml', recursive: true).list().asyncMap((file) async {
+      final pubspec = await PubSpec.loadFile(file.path);
 
-  while (packageQueue.isNotEmpty) {
-    // Using toList() to avoid concurrent modification
-    for (final entry in packageQueue.toList()) {
-      final package = entry.value;
-      if (visitedPackages.contains(package)) continue;
+      return Package(pubspec: pubspec, path: file.parent.path);
+    }).toList();
 
-      // Check that all dependencies have been visited
-      if (!package.dependenciesInWorkspace.values
-          .every(visitedPackages.contains)) {
-        // One of the dependency has not been visited yet
-        // We need to visit it first.
-        continue;
+    return Workspace(packages);
+  }
+
+  final List<Package> packages;
+  late final Set<String> uniqueDependencyNames = packages.map((e) => e.name).toSet();
+
+  Set<String> dependenciesInWorkspace(Package package) =>
+      uniqueDependencyNames.intersection(package.uniqueDependencyNames);
+
+  /// Visits the packages in dependency order.
+  ///
+  /// This visit all packages while guaranteeing that all dependencies
+  /// of a package are visited first, yet visit packages only once.
+  Future<void> visitPackagesInDependencyOrder(Future<void> Function(Package package) visitor,
+      {PackageFilters? filters}) async {
+    final futures = <Future<void>>[];
+    final visitedPackages = <Package>{};
+
+    void recurs(Package package) {
+      if (filters != null) {
+        if (filters.ignore.any((g) => g.matches(package.path))) return;
+        if (filters.scope.isNotEmpty && !filters.scope.any((g) => g.matches(package.path))) return;
       }
 
-      // All dependencies have been visited, we can visit this package
+      if (visitedPackages.contains(package)) return;
       visitedPackages.add(package);
-      packageQueue.remove(entry);
 
-      await visitor(package);
+      for (final childName in dependenciesInWorkspace(package)) {
+        final child = packages.firstWhere((p) => p.name == childName);
+
+        recurs(child);
+      }
+
+      futures.add(visitor(package));
     }
+
+    packages.forEach(recurs);
+
+    await Future.wait(futures);
   }
-}
-
-/// Lists all the packages within the current directory.
-Future<List<Package>> findPackages({PackageFilters? filters}) async {
-  try {
-    final configs =
-        await MelosWorkspaceConfig.fromWorkspaceRoot(Directory.current);
-    final workspace = await MelosWorkspace.fromConfig(
-      configs,
-      logger: MelosLogger(Logger.standard()),
-    );
-    return workspace.allPackages.values
-        .where((p) => filters?.ignore.every((g) => !g.matches(p.path)) ?? true)
-        .where((p) => filters?.scope.every((g) => g.matches(p.path)) ?? true)
-        .toList();
-  } on MelosException catch (e) {
-    stderr.writeln(e.toString());
-    return [];
-  }
-}
-
-class _Entry<T> extends LinkedListEntry<_Entry<T>> {
-  _Entry(this.value);
-
-  final T value;
 }
 
 extension on Object? {
@@ -99,12 +93,21 @@ class _Edit {
   final String content;
 }
 
-extension PackageMeta on Package {
+class Package {
+  Package({required this.pubspec, required this.path});
+
+  final PubSpec pubspec;
+  final String path;
+
+  late final uniqueDependencyNames = pubspec.allDependencies.keys.toSet();
+
+  String get name => pubspec.name!;
+  Version? get version => pubspec.version;
   File get pubspecFile => File(join(path, 'pubspec.yaml'));
-
   File get changelog => File(join(path, 'CHANGELOG.md'));
+  String get gitTagName => '$name-v${version!}';
 
-  String get gitTagName => '$name-v$version';
+  String get relativePath => normalize(relative(path));
 
   Future<void> publish() async {
     final process = await Process.start(
@@ -165,18 +168,9 @@ extension PackageMeta on Package {
 
     final versionNode = pubspecYaml.safeCast<YamlMap>()?.findEntry('version');
 
-    final dependenciesNode = pubspecYaml
-        .safeCast<YamlMap>()
-        ?.nodes['dependencies']
-        .safeCast<YamlMap>();
-    final devDependenciesNode = pubspecYaml
-        .safeCast<YamlMap>()
-        ?.nodes['dev_dependencies']
-        .safeCast<YamlMap>();
-    final dependencyOverridesNode = pubspecYaml
-        .safeCast<YamlMap>()
-        ?.nodes['dependency_overrides']
-        .safeCast<YamlMap>();
+    final dependenciesNode = pubspecYaml.safeCast<YamlMap>()?.nodes['dependencies'].safeCast<YamlMap>();
+    final devDependenciesNode = pubspecYaml.safeCast<YamlMap>()?.nodes['dev_dependencies'].safeCast<YamlMap>();
+    final dependencyOverridesNode = pubspecYaml.safeCast<YamlMap>()?.nodes['dependency_overrides'].safeCast<YamlMap>();
 
     // TODO handle "name:" placed after dependencies & co
 
@@ -198,33 +192,18 @@ extension PackageMeta on Package {
         // Not a version number. Likely a git/path dependency.
         if (value is! String) return;
 
-        VersionConstraint currentVersion;
-        try {
-          currentVersion = VersionConstraint.parse(value);
-        } catch (err) {
-          // Failed to parse the version, ignoring.
-          return;
-        }
-
-        final isTightConstraints = currentVersion == version;
-
         edits.add(
           _Edit(
             dependency.value.span.start.offset,
             dependency.value.span.end.offset,
-            isTightConstraints
-                ? dependencyChange.newVersion.toString()
-                : '^${dependencyChange.newVersion}',
+            dependencyChange.newVersion.toString(),
           ),
         );
       }
 
-      final dependency =
-          dependenciesNode?.findEntry(dependencyChange.package.name);
-      final devDependency =
-          devDependenciesNode?.findEntry(dependencyChange.package.name);
-      final dependencyOverride =
-          dependencyOverridesNode?.findEntry(dependencyChange.package.name);
+      final dependency = dependenciesNode?.findEntry(dependencyChange.package.name);
+      final devDependency = devDependenciesNode?.findEntry(dependencyChange.package.name);
+      final dependencyOverride = dependencyOverridesNode?.findEntry(dependencyChange.package.name);
 
       editDependency(dependency);
       editDependency(devDependency);

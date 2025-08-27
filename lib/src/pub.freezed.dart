@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,31 +10,50 @@ part of 'pub.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#custom-getters-and-methods');
-
-PubVersionResponse _$PubVersionResponseFromJson(Map<String, dynamic> json) {
-  return _PubVersionResponse.fromJson(json);
-}
 
 /// @nodoc
 mixin _$PubVersionResponse {
-  PubVersion get latest => throw _privateConstructorUsedError;
-  List<PubVersion> get versions => throw _privateConstructorUsedError;
+  PubVersion get latest;
+  List<PubVersion> get versions;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+  /// Create a copy of PubVersionResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
   $PubVersionResponseCopyWith<PubVersionResponse> get copyWith =>
-      throw _privateConstructorUsedError;
+      _$PubVersionResponseCopyWithImpl<PubVersionResponse>(
+          this as PubVersionResponse, _$identity);
+
+  /// Serializes this PubVersionResponse to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is PubVersionResponse &&
+            (identical(other.latest, latest) || other.latest == latest) &&
+            const DeepCollectionEquality().equals(other.versions, versions));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, latest, const DeepCollectionEquality().hash(versions));
+
+  @override
+  String toString() {
+    return 'PubVersionResponse(latest: $latest, versions: $versions)';
+  }
 }
 
 /// @nodoc
-abstract class $PubVersionResponseCopyWith<$Res> {
+abstract mixin class $PubVersionResponseCopyWith<$Res> {
   factory $PubVersionResponseCopyWith(
-          PubVersionResponse value, $Res Function(PubVersionResponse) then) =
-      _$PubVersionResponseCopyWithImpl<$Res, PubVersionResponse>;
+          PubVersionResponse value, $Res Function(PubVersionResponse) _then) =
+      _$PubVersionResponseCopyWithImpl;
   @useResult
   $Res call({PubVersion latest, List<PubVersion> versions});
 
@@ -41,93 +61,53 @@ abstract class $PubVersionResponseCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$PubVersionResponseCopyWithImpl<$Res, $Val extends PubVersionResponse>
+class _$PubVersionResponseCopyWithImpl<$Res>
     implements $PubVersionResponseCopyWith<$Res> {
-  _$PubVersionResponseCopyWithImpl(this._value, this._then);
+  _$PubVersionResponseCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final PubVersionResponse _self;
+  final $Res Function(PubVersionResponse) _then;
 
+  /// Create a copy of PubVersionResponse
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
     Object? latest = null,
     Object? versions = null,
   }) {
-    return _then(_value.copyWith(
+    return _then(_self.copyWith(
       latest: null == latest
-          ? _value.latest
+          ? _self.latest
           : latest // ignore: cast_nullable_to_non_nullable
               as PubVersion,
       versions: null == versions
-          ? _value.versions
+          ? _self.versions
           : versions // ignore: cast_nullable_to_non_nullable
               as List<PubVersion>,
-    ) as $Val);
+    ));
   }
 
+  /// Create a copy of PubVersionResponse
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
   $PubVersionCopyWith<$Res> get latest {
-    return $PubVersionCopyWith<$Res>(_value.latest, (value) {
-      return _then(_value.copyWith(latest: value) as $Val);
+    return $PubVersionCopyWith<$Res>(_self.latest, (value) {
+      return _then(_self.copyWith(latest: value));
     });
   }
 }
 
 /// @nodoc
-abstract class _$$_PubVersionResponseCopyWith<$Res>
-    implements $PubVersionResponseCopyWith<$Res> {
-  factory _$$_PubVersionResponseCopyWith(_$_PubVersionResponse value,
-          $Res Function(_$_PubVersionResponse) then) =
-      __$$_PubVersionResponseCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({PubVersion latest, List<PubVersion> versions});
-
-  @override
-  $PubVersionCopyWith<$Res> get latest;
-}
-
-/// @nodoc
-class __$$_PubVersionResponseCopyWithImpl<$Res>
-    extends _$PubVersionResponseCopyWithImpl<$Res, _$_PubVersionResponse>
-    implements _$$_PubVersionResponseCopyWith<$Res> {
-  __$$_PubVersionResponseCopyWithImpl(
-      _$_PubVersionResponse _value, $Res Function(_$_PubVersionResponse) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? latest = null,
-    Object? versions = null,
-  }) {
-    return _then(_$_PubVersionResponse(
-      latest: null == latest
-          ? _value.latest
-          : latest // ignore: cast_nullable_to_non_nullable
-              as PubVersion,
-      versions: null == versions
-          ? _value._versions
-          : versions // ignore: cast_nullable_to_non_nullable
-              as List<PubVersion>,
-    ));
-  }
-}
-
-/// @nodoc
 @JsonSerializable()
-class _$_PubVersionResponse extends _PubVersionResponse {
-  _$_PubVersionResponse(
+class _PubVersionResponse extends PubVersionResponse {
+  _PubVersionResponse(
       {required this.latest, required final List<PubVersion> versions})
       : _versions = versions,
         super._();
-
-  factory _$_PubVersionResponse.fromJson(Map<String, dynamic> json) =>
-      _$$_PubVersionResponseFromJson(json);
+  factory _PubVersionResponse.fromJson(Map<String, dynamic> json) =>
+      _$PubVersionResponseFromJson(json);
 
   @override
   final PubVersion latest;
@@ -139,134 +119,153 @@ class _$_PubVersionResponse extends _PubVersionResponse {
     return EqualUnmodifiableListView(_versions);
   }
 
+  /// Create a copy of PubVersionResponse
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'PubVersionResponse(latest: $latest, versions: $versions)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$PubVersionResponseCopyWith<_PubVersionResponse> get copyWith =>
+      __$PubVersionResponseCopyWithImpl<_PubVersionResponse>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$PubVersionResponseToJson(
+      this,
+    );
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_PubVersionResponse &&
+            other is _PubVersionResponse &&
             (identical(other.latest, latest) || other.latest == latest) &&
             const DeepCollectionEquality().equals(other._versions, _versions));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType, latest, const DeepCollectionEquality().hash(_versions));
 
-  @JsonKey(ignore: true)
   @override
-  @pragma('vm:prefer-inline')
-  _$$_PubVersionResponseCopyWith<_$_PubVersionResponse> get copyWith =>
-      __$$_PubVersionResponseCopyWithImpl<_$_PubVersionResponse>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$_PubVersionResponseToJson(
-      this,
-    );
+  String toString() {
+    return 'PubVersionResponse(latest: $latest, versions: $versions)';
   }
 }
 
-abstract class _PubVersionResponse extends PubVersionResponse {
-  factory _PubVersionResponse(
-      {required final PubVersion latest,
-      required final List<PubVersion> versions}) = _$_PubVersionResponse;
-  _PubVersionResponse._() : super._();
+/// @nodoc
+abstract mixin class _$PubVersionResponseCopyWith<$Res>
+    implements $PubVersionResponseCopyWith<$Res> {
+  factory _$PubVersionResponseCopyWith(
+          _PubVersionResponse value, $Res Function(_PubVersionResponse) _then) =
+      __$PubVersionResponseCopyWithImpl;
+  @override
+  @useResult
+  $Res call({PubVersion latest, List<PubVersion> versions});
 
-  factory _PubVersionResponse.fromJson(Map<String, dynamic> json) =
-      _$_PubVersionResponse.fromJson;
-
   @override
-  PubVersion get latest;
-  @override
-  List<PubVersion> get versions;
-  @override
-  @JsonKey(ignore: true)
-  _$$_PubVersionResponseCopyWith<_$_PubVersionResponse> get copyWith =>
-      throw _privateConstructorUsedError;
+  $PubVersionCopyWith<$Res> get latest;
 }
 
-PubVersion _$PubVersionFromJson(Map<String, dynamic> json) {
-  return _PubVersion.fromJson(json);
+/// @nodoc
+class __$PubVersionResponseCopyWithImpl<$Res>
+    implements _$PubVersionResponseCopyWith<$Res> {
+  __$PubVersionResponseCopyWithImpl(this._self, this._then);
+
+  final _PubVersionResponse _self;
+  final $Res Function(_PubVersionResponse) _then;
+
+  /// Create a copy of PubVersionResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? latest = null,
+    Object? versions = null,
+  }) {
+    return _then(_PubVersionResponse(
+      latest: null == latest
+          ? _self.latest
+          : latest // ignore: cast_nullable_to_non_nullable
+              as PubVersion,
+      versions: null == versions
+          ? _self._versions
+          : versions // ignore: cast_nullable_to_non_nullable
+              as List<PubVersion>,
+    ));
+  }
+
+  /// Create a copy of PubVersionResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $PubVersionCopyWith<$Res> get latest {
+    return $PubVersionCopyWith<$Res>(_self.latest, (value) {
+      return _then(_self.copyWith(latest: value));
+    });
+  }
 }
 
 /// @nodoc
 mixin _$PubVersion {
   @VersionConverter()
-  Version get version => throw _privateConstructorUsedError;
+  Version get version;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $PubVersionCopyWith<PubVersion> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $PubVersionCopyWith<$Res> {
-  factory $PubVersionCopyWith(
-          PubVersion value, $Res Function(PubVersion) then) =
-      _$PubVersionCopyWithImpl<$Res, PubVersion>;
-  @useResult
-  $Res call({@VersionConverter() Version version});
-}
-
-/// @nodoc
-class _$PubVersionCopyWithImpl<$Res, $Val extends PubVersion>
-    implements $PubVersionCopyWith<$Res> {
-  _$PubVersionCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of PubVersion
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $PubVersionCopyWith<PubVersion> get copyWith =>
+      _$PubVersionCopyWithImpl<PubVersion>(this as PubVersion, _$identity);
+
+  /// Serializes this PubVersion to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? version = null,
-  }) {
-    return _then(_value.copyWith(
-      version: null == version
-          ? _value.version
-          : version // ignore: cast_nullable_to_non_nullable
-              as Version,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is PubVersion &&
+            (identical(other.version, version) || other.version == version));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, version);
+
+  @override
+  String toString() {
+    return 'PubVersion(version: $version)';
   }
 }
 
 /// @nodoc
-abstract class _$$_PubVersionCopyWith<$Res>
-    implements $PubVersionCopyWith<$Res> {
-  factory _$$_PubVersionCopyWith(
-          _$_PubVersion value, $Res Function(_$_PubVersion) then) =
-      __$$_PubVersionCopyWithImpl<$Res>;
-  @override
+abstract mixin class $PubVersionCopyWith<$Res> {
+  factory $PubVersionCopyWith(
+          PubVersion value, $Res Function(PubVersion) _then) =
+      _$PubVersionCopyWithImpl;
   @useResult
   $Res call({@VersionConverter() Version version});
 }
 
 /// @nodoc
-class __$$_PubVersionCopyWithImpl<$Res>
-    extends _$PubVersionCopyWithImpl<$Res, _$_PubVersion>
-    implements _$$_PubVersionCopyWith<$Res> {
-  __$$_PubVersionCopyWithImpl(
-      _$_PubVersion _value, $Res Function(_$_PubVersion) _then)
-      : super(_value, _then);
+class _$PubVersionCopyWithImpl<$Res> implements $PubVersionCopyWith<$Res> {
+  _$PubVersionCopyWithImpl(this._self, this._then);
 
+  final PubVersion _self;
+  final $Res Function(PubVersion) _then;
+
+  /// Create a copy of PubVersion
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
     Object? version = null,
   }) {
-    return _then(_$_PubVersion(
+    return _then(_self.copyWith(
       version: null == version
-          ? _value.version
+          ? _self.version
           : version // ignore: cast_nullable_to_non_nullable
               as Version,
     ));
@@ -275,59 +274,80 @@ class __$$_PubVersionCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_PubVersion implements _PubVersion {
-  _$_PubVersion({@VersionConverter() required this.version});
-
-  factory _$_PubVersion.fromJson(Map<String, dynamic> json) =>
-      _$$_PubVersionFromJson(json);
+class _PubVersion implements PubVersion {
+  _PubVersion({@VersionConverter() required this.version});
+  factory _PubVersion.fromJson(Map<String, dynamic> json) =>
+      _$PubVersionFromJson(json);
 
   @override
   @VersionConverter()
   final Version version;
 
+  /// Create a copy of PubVersion
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$PubVersionCopyWith<_PubVersion> get copyWith =>
+      __$PubVersionCopyWithImpl<_PubVersion>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$PubVersionToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _PubVersion &&
+            (identical(other.version, version) || other.version == version));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, version);
+
   @override
   String toString() {
     return 'PubVersion(version: $version)';
   }
+}
 
+/// @nodoc
+abstract mixin class _$PubVersionCopyWith<$Res>
+    implements $PubVersionCopyWith<$Res> {
+  factory _$PubVersionCopyWith(
+          _PubVersion value, $Res Function(_PubVersion) _then) =
+      __$PubVersionCopyWithImpl;
   @override
-  bool operator ==(dynamic other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$_PubVersion &&
-            (identical(other.version, version) || other.version == version));
-  }
+  @useResult
+  $Res call({@VersionConverter() Version version});
+}
 
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(runtimeType, version);
+/// @nodoc
+class __$PubVersionCopyWithImpl<$Res> implements _$PubVersionCopyWith<$Res> {
+  __$PubVersionCopyWithImpl(this._self, this._then);
 
-  @JsonKey(ignore: true)
+  final _PubVersion _self;
+  final $Res Function(_PubVersion) _then;
+
+  /// Create a copy of PubVersion
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  _$$_PubVersionCopyWith<_$_PubVersion> get copyWith =>
-      __$$_PubVersionCopyWithImpl<_$_PubVersion>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$_PubVersionToJson(
-      this,
-    );
+  $Res call({
+    Object? version = null,
+  }) {
+    return _then(_PubVersion(
+      version: null == version
+          ? _self.version
+          : version // ignore: cast_nullable_to_non_nullable
+              as Version,
+    ));
   }
 }
 
-abstract class _PubVersion implements PubVersion {
-  factory _PubVersion({@VersionConverter() required final Version version}) =
-      _$_PubVersion;
-
-  factory _PubVersion.fromJson(Map<String, dynamic> json) =
-      _$_PubVersion.fromJson;
-
-  @override
-  @VersionConverter()
-  Version get version;
-  @override
-  @JsonKey(ignore: true)
-  _$$_PubVersionCopyWith<_$_PubVersion> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// dart format on
