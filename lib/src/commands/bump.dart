@@ -120,6 +120,7 @@ class BumpCommand extends Command<void> {
       if (dependencyChanges.isEmpty) return;
 
       final lockedDependencyChanges = _findLockedDependencyChanges(package, dependencyChanges);
+      final preReleaseFlag = dependencyChanges.any((e) => e.type.isPreRelease) ? dependencyChanges.map((e) => e.type.preReleaseFlag).nonNulls.firstOrNull : null;
 
       if (update == null) {
         // If a package has no updates but some dependency changes, we need to
@@ -128,7 +129,7 @@ class BumpCommand extends Command<void> {
         if (package.version == null) return;
         update = versionBumps[package.name] = PackageUpdate(
           package,
-          lockedDependencyChanges ?? PackageUpdateType.dependencyChange(package.version!),
+          lockedDependencyChanges ?? PackageUpdateType.dependencyChange(package.version!, preReleaseFlag),
         );
 
         if (package.changelog.existsSync()) {

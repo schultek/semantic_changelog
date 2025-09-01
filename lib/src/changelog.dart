@@ -41,9 +41,11 @@ sealed class PackageUpdateType with _$PackageUpdateType {
 
   const factory PackageUpdateType.version(Version version) = _Version;
 
-  factory PackageUpdateType.dependencyChange(Version version) {
+  factory PackageUpdateType.dependencyChange(Version version, String? preReleaseFlag) {
     if (version.isPreRelease) {
       return PackageUpdateType.version(version.nextPre);
+    } else if (preReleaseFlag != null) {
+      return PackageUpdateType.version(Version(version.major, version.minor, version.patch, pre: preReleaseFlag));
     } else {
       return PackageUpdateType.version(version.nextPatch);
     }
@@ -81,6 +83,18 @@ sealed class PackageUpdateType with _$PackageUpdateType {
         throw ArgumentError.value(value, 'value');
     }
   }
+}
+
+extension PackageUpdateTypeX on PackageUpdateType {
+  bool get isPreRelease =>
+      (this is _FlaggedPackageUpdateType && (this as _FlaggedPackageUpdateType).flag != null) ||
+      (this is _Version && (this as _Version).version.isPreRelease);
+
+  String? get preReleaseFlag => (this is _FlaggedPackageUpdateType)
+      ? (this as _FlaggedPackageUpdateType).flag
+      : (this is _Version && (this as _Version).version.isPreRelease)
+          ? (this as _Version).version.preRelease.join('.')
+          : null;
 }
 
 class Patch {
