@@ -45,7 +45,7 @@ sealed class PackageUpdateType with _$PackageUpdateType {
     if (version.isPreRelease) {
       return PackageUpdateType.version(version.nextPre);
     } else if (preReleaseFlag != null) {
-      return PackageUpdateType.version(Version(version.major, version.minor, version.patch, pre: preReleaseFlag));
+      return PackageUpdateType.version(Version(version.major, version.minor, version.patch+1, pre: preReleaseFlag));
     } else {
       return PackageUpdateType.version(version.nextPatch);
     }
