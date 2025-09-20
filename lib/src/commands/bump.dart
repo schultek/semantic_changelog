@@ -114,13 +114,19 @@ class BumpCommand extends Command<void> {
       var update = versionBumps[package.name];
 
       // Check if any of the dependencies has a version bump
-      final dependencyChanges =
-          workspace.dependenciesInWorkspace(package).map((dependency) => versionBumps[dependency]).nonNulls.toList();
+      final dependencyChanges = workspace
+          .dependenciesInWorkspace(package)
+          .map((dependency) => versionBumps[dependency])
+          .nonNulls
+          .where((update) => needsDependencyBump(package, update))
+          .toList();
 
       if (dependencyChanges.isEmpty) return;
 
       final lockedDependencyChanges = _findLockedDependencyChanges(package, dependencyChanges);
-      final preReleaseFlag = dependencyChanges.any((e) => e.type.isPreRelease) ? dependencyChanges.map((e) => e.type.preReleaseFlag).nonNulls.firstOrNull : null;
+      final preReleaseFlag = dependencyChanges.any((e) => e.type.isPreRelease)
+          ? dependencyChanges.map((e) => e.type.preReleaseFlag).nonNulls.firstOrNull
+          : null;
 
       if (update == null) {
         // If a package has no updates but some dependency changes, we need to
@@ -185,4 +191,18 @@ PackageUpdateType? _findLockedDependencyChanges(
   }
 
   return result;
+}
+
+bool needsDependencyBump(
+  Package package,
+  PackageUpdate dependencyChange,
+) {
+  final dependency = package.pubspec.dependencies[dependencyChange.package.name] ??
+      package.pubspec.devDependencies[dependencyChange.package.name];
+
+  if (dependency is HostedDependency && dependency.version.allows(dependencyChange.newVersion)) {
+    // No bump needed
+    return false;
+  }
+  return true;
 }
