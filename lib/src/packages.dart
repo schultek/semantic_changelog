@@ -216,6 +216,8 @@ class Package {
       editDependency(dependencyOverride);
     }
 
+    edits.sort((a, b) => a.start.compareTo(b.start));
+
     final newPubspecContent = StringBuffer();
     var lastOffset = 0;
     for (final edit in edits) {
