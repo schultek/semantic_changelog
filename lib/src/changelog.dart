@@ -41,11 +41,27 @@ sealed class PackageUpdateType with _$PackageUpdateType {
 
   const factory PackageUpdateType.version(Version version) = _Version;
 
-  factory PackageUpdateType.dependencyChange(Version version, String? preReleaseFlag) {
+  factory PackageUpdateType.dependencyChange(
+    Version version,
+    String? preReleaseFlag,
+  ) {
     if (version.isPreRelease) {
-      return PackageUpdateType.version(version.nextPre);
+      if (preReleaseFlag != null) {
+        return PackageUpdateType.version(version.nextPre);
+      } else {
+        return PackageUpdateType.version(
+          Version(version.major, version.minor, version.patch),
+        );
+      }
     } else if (preReleaseFlag != null) {
-      return PackageUpdateType.version(Version(version.major, version.minor, version.patch+1, pre: preReleaseFlag));
+      return PackageUpdateType.version(
+        Version(
+          version.major,
+          version.minor,
+          version.patch + 1,
+          pre: preReleaseFlag,
+        ),
+      );
     } else {
       return PackageUpdateType.version(version.nextPatch);
     }
@@ -87,7 +103,8 @@ sealed class PackageUpdateType with _$PackageUpdateType {
 
 extension PackageUpdateTypeX on PackageUpdateType {
   bool get isPreRelease =>
-      (this is _FlaggedPackageUpdateType && (this as _FlaggedPackageUpdateType).flag != null) ||
+      (this is _FlaggedPackageUpdateType &&
+          (this as _FlaggedPackageUpdateType).flag != null) ||
       (this is _Version && (this as _Version).version.isPreRelease);
 
   String? get preReleaseFlag => (this is _FlaggedPackageUpdateType)

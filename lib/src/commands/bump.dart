@@ -46,7 +46,8 @@ class BumpCommand extends Command<void> {
       stdout.writeln('No packages have been updated.');
       return;
     }
-    final longestPackageNameLength = versionBumps.keys.map((e) => e.length).reduce(max);
+    final longestPackageNameLength =
+        versionBumps.keys.map((e) => e.length).reduce(max);
 
     final buffer = StringBuffer(
       'The following packages have been updated:\n',
@@ -102,7 +103,8 @@ class BumpCommand extends Command<void> {
 
     final workspace = await Workspace.find();
 
-    await workspace.visitPackagesInDependencyOrder(filters: filters, (package) async {
+    await workspace.visitPackagesInDependencyOrder(filters: filters,
+        (package) async {
       final update = await PackageUpdate.tryParse(package);
       if (update != null) {
         versionBumps[package.name] = update;
@@ -110,7 +112,8 @@ class BumpCommand extends Command<void> {
       }
     });
 
-    await workspace.visitPackagesInDependencyOrder(filters: filters, (package) async {
+    await workspace.visitPackagesInDependencyOrder(filters: filters,
+        (package) async {
       var update = versionBumps[package.name];
 
       // Check if any of the dependencies has a version bump
@@ -123,9 +126,13 @@ class BumpCommand extends Command<void> {
 
       if (dependencyChanges.isEmpty) return;
 
-      final lockedDependencyChanges = _findLockedDependencyChanges(package, dependencyChanges);
+      final lockedDependencyChanges =
+          _findLockedDependencyChanges(package, dependencyChanges);
       final preReleaseFlag = dependencyChanges.any((e) => e.type.isPreRelease)
-          ? dependencyChanges.map((e) => e.type.preReleaseFlag).nonNulls.firstOrNull
+          ? dependencyChanges
+              .map((e) => e.type.preReleaseFlag)
+              .nonNulls
+              .firstOrNull
           : null;
 
       if (update == null) {
@@ -135,7 +142,11 @@ class BumpCommand extends Command<void> {
         if (package.version == null) return;
         update = versionBumps[package.name] = PackageUpdate(
           package,
-          lockedDependencyChanges ?? PackageUpdateType.dependencyChange(package.version!, preReleaseFlag),
+          lockedDependencyChanges ??
+              PackageUpdateType.dependencyChange(
+                package.version!,
+                preReleaseFlag,
+              ),
         );
 
         if (package.changelog.existsSync()) {
@@ -184,7 +195,8 @@ PackageUpdateType? _findLockedDependencyChanges(
   List<PackageUpdate> dependencyChanges,
 ) {
   PackageUpdateType? result;
-  for (final lockedDependency in dependencyChanges.where((e) => package.isLockedWithDependency(e.package.name))) {
+  for (final lockedDependency in dependencyChanges
+      .where((e) => package.isLockedWithDependency(e.package.name))) {
     if (result != null && result != lockedDependency.type) return null;
 
     result = lockedDependency.type;
@@ -197,10 +209,20 @@ bool needsDependencyBump(
   Package package,
   PackageUpdate dependencyChange,
 ) {
-  final dependency = package.pubspec.dependencies[dependencyChange.package.name] ??
-      package.pubspec.devDependencies[dependencyChange.package.name];
+  final dependency =
+      package.pubspec.dependencies[dependencyChange.package.name] ??
+          package.pubspec.devDependencies[dependencyChange.package.name];
 
-  if (dependency is HostedDependency && dependency.version.allows(dependencyChange.newVersion)) {
+  if (dependency is HostedDependency &&
+      dependency.version.allows(dependencyChange.newVersion)) {
+    if ((dependency.version, dependencyChange.newVersion)
+        case (
+          VersionRange(min: Version(isPreRelease: true)),
+          Version(isPreRelease: false)
+        )) {
+      // Bumping from pre-release to stable always requires a bump
+      return true;
+    }
     // No bump needed
     return false;
   }

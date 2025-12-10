@@ -24,7 +24,8 @@ class Workspace {
   static Future<Workspace> find() async {
     final rootPubspec = Pubspec.parse(File('pubspec.yaml').readAsStringSync());
     final packages = rootPubspec.workspace?.map((file) {
-          final pubspec = Pubspec.parse(File(join(file, 'pubspec.yaml')).readAsStringSync());
+          final pubspec = Pubspec.parse(
+              File(join(file, 'pubspec.yaml')).readAsStringSync());
 
           return Package(pubspec: pubspec, path: file);
         }).toList() ??
@@ -34,7 +35,8 @@ class Workspace {
   }
 
   final List<Package> packages;
-  late final Set<String> uniqueDependencyNames = packages.map((e) => e.name).toSet();
+  late final Set<String> uniqueDependencyNames =
+      packages.map((e) => e.name).toSet();
 
   Set<String> dependenciesInWorkspace(Package package) =>
       uniqueDependencyNames.intersection(package.uniqueDependencyNames);
@@ -43,7 +45,8 @@ class Workspace {
   ///
   /// This visit all packages while guaranteeing that all dependencies
   /// of a package are visited first, yet visit packages only once.
-  Future<void> visitPackagesInDependencyOrder(Future<void> Function(Package package) visitor,
+  Future<void> visitPackagesInDependencyOrder(
+      Future<void> Function(Package package) visitor,
       {PackageFilters? filters}) async {
     final futures = <Future<void>>[];
     final visitedPackages = <Package>{};
@@ -64,7 +67,8 @@ class Workspace {
     for (final package in packages) {
       if (filters != null) {
         if (filters.ignore.any((g) => g.matches(package.path))) continue;
-        if (filters.scope.isNotEmpty && !filters.scope.any((g) => g.matches(package.path))) continue;
+        if (filters.scope.isNotEmpty &&
+            !filters.scope.any((g) => g.matches(package.path))) continue;
       }
       recurs(package);
     }
@@ -101,7 +105,9 @@ class Package {
   final Pubspec pubspec;
   final String path;
 
-  late final uniqueDependencyNames = pubspec.dependencies.keys.followedBy(pubspec.devDependencies.keys).toSet();
+  late final uniqueDependencyNames = pubspec.dependencies.keys
+      .followedBy(pubspec.devDependencies.keys)
+      .toSet();
 
   String get name => pubspec.name;
   Version? get version => pubspec.version;
@@ -170,9 +176,18 @@ class Package {
 
     final versionNode = pubspecYaml.safeCast<YamlMap>()?.findEntry('version');
 
-    final dependenciesNode = pubspecYaml.safeCast<YamlMap>()?.nodes['dependencies'].safeCast<YamlMap>();
-    final devDependenciesNode = pubspecYaml.safeCast<YamlMap>()?.nodes['dev_dependencies'].safeCast<YamlMap>();
-    final dependencyOverridesNode = pubspecYaml.safeCast<YamlMap>()?.nodes['dependency_overrides'].safeCast<YamlMap>();
+    final dependenciesNode = pubspecYaml
+        .safeCast<YamlMap>()
+        ?.nodes['dependencies']
+        .safeCast<YamlMap>();
+    final devDependenciesNode = pubspecYaml
+        .safeCast<YamlMap>()
+        ?.nodes['dev_dependencies']
+        .safeCast<YamlMap>();
+    final dependencyOverridesNode = pubspecYaml
+        .safeCast<YamlMap>()
+        ?.nodes['dependency_overrides']
+        .safeCast<YamlMap>();
 
     // TODO handle "name:" placed after dependencies & co
 
@@ -194,7 +209,7 @@ class Package {
         // Not a version number. Likely a git/path dependency.
         if (value is! String) return;
 
-        if (containsVersion(value, dependencyChange.newVersion)) {
+        if (!needsVersionChange(value, dependencyChange.newVersion)) {
           return;
         }
 
@@ -202,14 +217,19 @@ class Package {
           _Edit(
             dependency.value.span.start.offset,
             dependency.value.span.end.offset,
-            isTightConstraints(value) ? dependencyChange.newVersion.toString() : '^${dependencyChange.newVersion}',
+            isTightConstraints(value)
+                ? dependencyChange.newVersion.toString()
+                : '^${dependencyChange.newVersion}',
           ),
         );
       }
 
-      final dependency = dependenciesNode?.findEntry(dependencyChange.package.name);
-      final devDependency = devDependenciesNode?.findEntry(dependencyChange.package.name);
-      final dependencyOverride = dependencyOverridesNode?.findEntry(dependencyChange.package.name);
+      final dependency =
+          dependenciesNode?.findEntry(dependencyChange.package.name);
+      final devDependency =
+          devDependenciesNode?.findEntry(dependencyChange.package.name);
+      final dependencyOverride =
+          dependencyOverridesNode?.findEntry(dependencyChange.package.name);
 
       editDependency(dependency);
       editDependency(devDependency);
@@ -240,6 +260,17 @@ bool isTightConstraints(String value) {
   }
 }
 
-bool containsVersion(String value, Version version) {
-  return VersionConstraint.parse(value).allows(version);
+bool needsVersionChange(String value, Version version) {
+  final constraint = VersionConstraint.parse(value);
+  if (constraint.allows(version)) {
+    if ((constraint, version)
+        case (
+          VersionRange(min: Version(isPreRelease: true)),
+          Version(isPreRelease: false)
+        )) {
+      return true;
+    }
+    return false;
+  }
+  return true;
 }
